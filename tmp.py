@@ -1,8 +1,8 @@
+import pickle
 import sklearn
 import pandas
 import numpy as np
 from sklearn.model_selection import train_test_split
-
 from sklearn.linear_model import LinearRegression
 
 data = pandas.read_csv('cars.csv')
@@ -10,13 +10,16 @@ data = pandas.read_csv('cars.csv')
 data_dropped = data.dropna()
 X_temp = data_dropped.drop('price', axis=1).drop('_id', axis=1).drop('url', axis=1)
 y = data_dropped['price']
-print(y.describe())
 X = pandas.get_dummies(X_temp)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 regressor = LinearRegression()
 regressor.fit(X_train, y_train)
+
+pickle.dump(X_temp.columns.values, open('input_columns.sav', 'wb'))
+pickle.dump(X.columns, open('model_meta.sav', 'wb'))
+pickle.dump(regressor, open('model.sav', 'wb'))
 
 y_predicted = regressor.predict(X_test)
 
@@ -60,5 +63,5 @@ for i in range(len(y_test_pred)):
 #
 print("ams:", amir_mamad_error / l)
 
-# y_test.columns = [id', 'price']
-# print(y_test)
+y_test.columns = ['id', 'price']
+print(y_test)

@@ -2,3 +2,7 @@
 __pycache__
 cars-test.csv
 cars.csv
+input_columns.sav
+model.sav
+model_meta.sav
+env
