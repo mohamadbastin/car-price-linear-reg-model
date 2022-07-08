@@ -1,6 +1,7 @@
 .idea
 __pycache__
 cars-test.csv
+cars-test2.csv
 cars.csv
 input_columns.sav
 model.sav

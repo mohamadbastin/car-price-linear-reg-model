@@ -12,8 +12,8 @@ def clear():
 
 def input_random_test():
     clear()
-    test_data = pd.read_csv('cars-test.csv').dropna().drop('price', axis=1).drop('_id', axis=1).drop('url', axis=1)
-    sample_car = test_data.loc[randint(0, len(test_data.index) - 1), :].values.tolist()
+    test_data = pd.read_csv('cars-test2.csv').dropna().reset_index(drop=True).drop('price', axis=1).drop('_id', axis=1).drop('url', axis=1)
+    sample_car = test_data.loc[randint(1, len(test_data.index) - 1), :].values.tolist()
     # Testing
     for i in range(len(fields)):
         fields[i].insert(0, sample_car[i])
@@ -39,8 +39,21 @@ def insert():
         # Predict the price
         predicted_price = model.predict(car_df)
         # Show the price
-        output_str = f"The predicted price is: {format(predicted_price[0].astype('int64'), ',')}"
+        prediction = predicted_price[0].astype('int64')
+        output_str = f"The predicted price is: {format(prediction, ',')}"
         output_text.config(text=output_str)
+        if (estimated_price_field.get() != ""):
+            eprice = int(estimated_price_field.get())
+            if (abs(eprice - prediction) < 40000000):
+                verdict_str = f"Your estimation is exact!"
+            elif (eprice > prediction):
+                verdict_str = f"Your estimation is higher than our prediction."
+            elif (eprice < predicted_price):
+                verdict_str = f"Your estimation is lower than our prediction."
+            verdict_text.config(text=verdict_str)
+        else:
+            verdict_text.config(text='')
+
 
 if __name__ == "__main__":
 
@@ -75,19 +88,27 @@ if __name__ == "__main__":
         # add_bidi_support(new_label_field)
         fields.append(new_label_field)
 
-    submit = Button(form_frame, text="Submit", fg="Black", font='any 15',
+    estimated_price = Label(form_frame, text="Estimated Price", bg="light blue", font="any 15", relief=RAISED)
+    estimated_price.grid(row=len(field_labels) + 1, column=0, pady=5, padx=6, sticky='ew')
+    estimated_price_field = Entry(form_frame, font='any 17')
+    estimated_price_field.grid(row=len(field_labels) + 1, column=1, ipadx="100", pady=5, padx=10)
+
+    submit = Button(form_frame, text="Predict", fg="Black", font='any 15',
                             bg="Red", command=insert)
-    submit.grid(row=len(field_labels) + 1, column=1, pady=10)
+    submit.grid(row=len(field_labels) + 2, column=1, pady=10)
 
     randomize = Button(form_frame, text="Randomize", fg="Black", font='any 15', bg='white', command=input_random_test)
-    randomize.grid(row=len(field_labels) + 1, column=0)
+    randomize.grid(row=len(field_labels) + 2, column=0)
 
     form_frame.grid(row=0, sticky='ew')
 
     output_frame = Frame()
     output_frame.configure(background='light blue')
     output_text = Label(output_frame, text="", bg='light blue', font='any 16')
-    output_text.grid(row=0, column=0)
-    output_frame.grid(row=1, sticky='ew', padx=10, pady=10)
+    output_text.grid(row=0, column=0, sticky='w')
+    verdict_text = Label(output_frame, text="", bg='light blue', font='any 16')
+    verdict_text.grid(row=1, column=0, sticky='w')
+    output_frame.grid(row=1, padx=10, pady=10)
+    
  
     root.mainloop()
