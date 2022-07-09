@@ -1,22 +1,32 @@
 import pickle
 from random import randint
+from tkinter.ttk import Combobox
 import pandas as pd
+import numpy as np
 from sklearn.linear_model import LinearRegression
 from tkinter import *
 from tkinter.constants import *
-# from awesometkinter.bidirender import add_bidi_support, render_text
 
 def clear():
     for field in fields:
-        field.delete(0, END)
+        if field.winfo_class() == 'TCombobox':
+            field.config(state='normal')
+            field.delete(0, END)
+            field.config(state='readonly')
+        else:
+            field.delete(0, END)
 
 def input_random_test():
     clear()
     test_data = pd.read_csv('cars-test2.csv').dropna().reset_index(drop=True).drop('price', axis=1).drop('_id', axis=1).drop('url', axis=1)
     sample_car = test_data.loc[randint(1, len(test_data.index) - 1), :].values.tolist()
-    # Testing
     for i in range(len(fields)):
-        fields[i].insert(0, sample_car[i])
+        if fields[i].winfo_class() == 'TCombobox':
+            fields[i].config(state='normal')
+            fields[i].insert(0, sample_car[i])
+            fields[i].config(state='readonly')
+        else:
+            fields[i].insert(0, sample_car[i])
 
 def insert():
     if any(field.get() == "" for field in fields):
@@ -33,7 +43,7 @@ def insert():
                     return str
         # Transform the input for the model
         car_details = [parse_element(field.get()) for field in fields]
-        car_df_raw = pd.DataFrame([car_details], columns = field_labels)
+        car_df_raw = pd.DataFrame([car_details], columns = [field['name'] for field in input_fields])
         car_df = pd.get_dummies(car_df_raw)
         car_df = car_df.reindex(labels=model_meta, axis=1, fill_value=0)
         # Predict the price
@@ -45,7 +55,7 @@ def insert():
         if (estimated_price_field.get() != ""):
             eprice = int(estimated_price_field.get())
             if (abs(eprice - prediction) < 40000000):
-                verdict_str = f"Your estimation is exact!"
+                verdict_str = f"Your estimation is close enough!"
             elif (eprice > prediction):
                 verdict_str = f"Your estimation is higher than our prediction."
             elif (eprice < predicted_price):
@@ -56,10 +66,9 @@ def insert():
 
 
 if __name__ == "__main__":
-
     # Load Column Names, Model
     try:
-        field_labels = pickle.load(open('input_columns.sav', 'rb'))
+        input_fields = pickle.load(open('input_columns.sav', 'rb'))
         model_meta = pickle.load(open('model_meta.sav', 'rb'))
         model = pickle.load(open('model.sav', 'rb'))
     except:
@@ -71,44 +80,49 @@ if __name__ == "__main__":
  
     root.title("Car Price Prediciton")
  
-    root.geometry("680x700")
+    root.geometry("680x780")
 
     form_frame = Frame()
+    form_frame.columnconfigure(1, weight=1)
     form_frame.configure(background='light blue')
 
     heading = Label(form_frame, text="Car Details Form", bg="light blue", font='any 20')
     heading.grid(row=0, column=1)
 
     fields = []
-    for i in range(len(field_labels)):
-        new_label = Label(form_frame, text=field_labels[i], bg="light blue", font='any 15', relief=RAISED)
+    for i, field in enumerate(input_fields):
+        new_label = Label(form_frame, text=field['name'], bg="light blue", font='any 15', relief=RAISED)
         new_label.grid(row=i+1, column=0, pady=5, padx=6, sticky='ew')
-        new_label_field = Entry(form_frame, font='any 17')
-        new_label_field.grid(row=i+1, column=1, ipadx="100", pady=5, padx=10)
-        # add_bidi_support(new_label_field)
+        if field['type'] == object:
+            new_label_field = Combobox(form_frame, state='readonly', font='any 17')
+            new_label_field['values'] = field['unique_vals'].tolist()
+            new_label_field.grid(row=i+1, column=1, ipadx="91", pady=5, padx=10)
+        else:
+            new_label_field = Entry(form_frame, font='any 17')
+            new_label_field.grid(row=i+1, column=1, ipadx="100", pady=5, padx=10)
         fields.append(new_label_field)
 
     estimated_price = Label(form_frame, text="Estimated Price", bg="light blue", font="any 15", relief=RAISED)
-    estimated_price.grid(row=len(field_labels) + 1, column=0, pady=5, padx=6, sticky='ew')
+    estimated_price.grid(row=len(input_fields) + 1, column=0, pady=5, padx=6, sticky='ew')
     estimated_price_field = Entry(form_frame, font='any 17')
-    estimated_price_field.grid(row=len(field_labels) + 1, column=1, ipadx="100", pady=5, padx=10)
+    estimated_price_field.grid(row=len(input_fields) + 1, column=1, ipadx="100", pady=5, padx=10)
 
     submit = Button(form_frame, text="Predict", fg="Black", font='any 15',
                             bg="Red", command=insert)
-    submit.grid(row=len(field_labels) + 2, column=1, pady=10)
+    submit.grid(row=len(input_fields) + 2, column=1, pady=10)
 
     randomize = Button(form_frame, text="Randomize", fg="Black", font='any 15', bg='white', command=input_random_test)
-    randomize.grid(row=len(field_labels) + 2, column=0)
+    randomize.grid(row=len(input_fields) + 2, column=0)
 
     form_frame.grid(row=0, sticky='ew')
 
     output_frame = Frame()
     output_frame.configure(background='light blue')
-    output_text = Label(output_frame, text="", bg='light blue', font='any 16')
+    output_text = Label(output_frame, text="", bg='light blue', font='any 20')
     output_text.grid(row=0, column=0, sticky='w')
-    verdict_text = Label(output_frame, text="", bg='light blue', font='any 16')
+    verdict_text = Label(output_frame, text="", bg='light blue', font='any 18')
     verdict_text.grid(row=1, column=0, sticky='w')
-    output_frame.grid(row=1, padx=10, pady=10)
+    output_frame.grid(row=1, padx=25, pady=10, sticky='ew')
     
  
     root.mainloop()

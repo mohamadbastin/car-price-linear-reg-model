@@ -5,6 +5,12 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 
+def save_model_info_to_disk():
+    input_columns = [{'name': col, 'type': X_temp[col].dtype, 'unique_vals': X_temp[col].unique() if X_temp[col].dtype == object else None} for col in X_temp.columns]
+    pickle.dump(input_columns, open('input_columns.sav', 'wb'))
+    pickle.dump(X.columns, open('model_meta.sav', 'wb'))
+    pickle.dump(regressor, open('model.sav', 'wb'))
+
 data = pandas.read_csv('cars.csv')
 
 data_dropped = data.dropna()
@@ -17,9 +23,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 regressor = LinearRegression()
 regressor.fit(X_train, y_train)
 
-pickle.dump(X_temp.columns.values, open('input_columns.sav', 'wb'))
-pickle.dump(X.columns, open('model_meta.sav', 'wb'))
-pickle.dump(regressor, open('model.sav', 'wb'))
+save_model_info_to_disk()
 
 y_predicted = regressor.predict(X_test)
 
