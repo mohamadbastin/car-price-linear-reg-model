@@ -1,8 +1,10 @@
+import sys
 import pickle
-from random import randint
-from tkinter.ttk import Combobox
 import pandas as pd
 import numpy as np
+import pycaret.regression as pycreg
+from random import randint
+from tkinter.ttk import Combobox
 from sklearn.linear_model import LinearRegression
 from tkinter import *
 from tkinter.constants import *
@@ -18,7 +20,7 @@ def clear():
 
 def input_random_test():
     clear()
-    test_data = pd.read_csv('cars-test2.csv').dropna().reset_index(drop=True).drop('price', axis=1).drop('_id', axis=1).drop('url', axis=1)
+    test_data = pd.read_csv('cars-test3.csv').dropna().reset_index(drop=True).drop('price', axis=1).drop('_id', axis=1).drop('url', axis=1)
     sample_car = test_data.loc[randint(1, len(test_data.index) - 1), :].values.tolist()
     for i in range(len(fields)):
         if fields[i].winfo_class() == 'TCombobox':
@@ -30,7 +32,8 @@ def input_random_test():
 
 def insert():
     if any(field.get() == "" for field in fields):
-        print("empty input")
+        output_str = "Please fill all of the fields."
+        output_text.config(text=output_str)
     else:
         # Helper function to parse input data into appropriate types
         def parse_element(str):
@@ -44,12 +47,17 @@ def insert():
         # Transform the input for the model
         car_details = [parse_element(field.get()) for field in fields]
         car_df_raw = pd.DataFrame([car_details], columns = [field['name'] for field in input_fields])
-        car_df = pd.get_dummies(car_df_raw)
-        car_df = car_df.reindex(labels=model_meta, axis=1, fill_value=0)
-        # Predict the price
-        predicted_price = model.predict(car_df)
-        # Show the price
-        prediction = predicted_price[0].astype('int64')
+
+        if model_type == 'rf':
+            predicted_price = pycreg.predict_model(model, car_df_raw)
+            prediction = predicted_price['Label'][0].astype('int64')
+
+        else:
+            car_df = pd.get_dummies(car_df_raw)
+            car_df = car_df.reindex(labels=model_meta, axis=1, fill_value=0)
+            predicted_price = model.predict(car_df)
+            prediction = predicted_price[0].astype('int64')
+
         output_str = f"The predicted price is: {format(prediction, ',')}"
         output_text.config(text=output_str)
         if (estimated_price_field.get() != ""):
@@ -66,13 +74,21 @@ def insert():
 
 
 if __name__ == "__main__":
+
+    # Choose model type (lr=linear regression, rf=random forest)
+    model_type = sys.argv[1] if len(sys.argv) > 1 else None
+
     # Load Column Names, Model
     try:
         input_fields = pickle.load(open('input_columns.sav', 'rb'))
-        model_meta = pickle.load(open('model_meta.sav', 'rb'))
-        model = pickle.load(open('model.sav', 'rb'))
+        if model_type == 'rf':
+            model = pycreg.load_model("rf")
+        else:
+            model_meta = pickle.load(open('model_meta.sav', 'rb'))
+            model = pickle.load(open('model.sav', 'rb'))
     except:
         print("Can't load model metadata.")
+    
 
     root = Tk()
  

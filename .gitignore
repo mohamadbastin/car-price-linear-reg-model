@@ -2,8 +2,11 @@
 __pycache__
 cars-test.csv
 cars-test2.csv
+cars-test3.csv
 cars.csv
 input_columns.sav
 model.sav
 model_meta.sav
+rf.pkl
+logs.log
 env
